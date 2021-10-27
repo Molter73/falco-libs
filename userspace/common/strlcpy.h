@@ -23,6 +23,10 @@ limitations under the License.
 
   \return The length of the source string.
 */
+
+// Musl libc already has a strlcpy, and doesn't define its own
+// _MUSL_SOURCE, so we use MINIMAL_BUILD as the next best option.
+#ifndef MINIMAL_BUILD
 static inline size_t strlcpy(char *dst, const char *src, size_t size) {
     size_t srcsize = strlen(src);
     if (size == 0) {
@@ -40,3 +44,4 @@ static inline size_t strlcpy(char *dst, const char *src, size_t size) {
 
     return srcsize;
 }
+#endif
