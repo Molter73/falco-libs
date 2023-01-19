@@ -38,13 +38,13 @@ extern "C" {
 using namespace std;
 
 // Functions used for dumping to stdout
-void plaintext_dump(sinsp& inspector);
-void json_dump(sinsp& inspector);
+void plaintext_dump(sinsp_evt* ev);
+void json_dump(sinsp_evt* ev);
 void json_dump_init(sinsp& inspector);
 void json_dump_reinit_evt_formatter(sinsp& inspector);
 
 std::unordered_set<std::string> extract_filter_events(sinsp& inspector);
-std::function<void(sinsp& inspector)> dump;
+std::function<void(sinsp_evt*)> dump;
 static bool g_interrupted = false;
 static const uint8_t g_backoff_timeout_secs = 2;
 static bool g_all_threads = false;
@@ -56,7 +56,7 @@ string bpf_path = "";
 string output_fields_json = "";
 unsigned long buffer_bytes_dim = DEFAULT_DRIVER_BUFFER_BYTES_DIM;
 
-sinsp_evt* get_event(sinsp& inspector);
+sinsp_evt* get_event(sinsp& inspector, std::function<void(const std::string&)> handle_error);
 
 #define PROCESS_DEFAULTS "*%evt.num %evt.time %evt.category %container.id %proc.ppid %proc.pid %evt.type %proc.exe %proc.cmdline %evt.args"
 
@@ -320,7 +320,12 @@ int main(int argc, char** argv)
 	inspector.start_capture();
 	while(!g_interrupted)
 	{
-		dump(inspector);
+		sinsp_evt* ev = get_event(inspector, [](const std::string& error_msg)
+					  { cout << "[ERROR] " << error_msg << endl; });
+		if(ev != nullptr)
+		{
+			dump(ev);
+		}
 	}
 	inspector.stop_capture();
 
@@ -347,17 +352,8 @@ sinsp_evt* get_event(sinsp& inspector, std::function<void(const std::string&)> h
 	return nullptr;
 }
 
-void plaintext_dump(sinsp& inspector)
+void plaintext_dump(sinsp_evt* ev)
 {
-
-	sinsp_evt* ev = get_event(inspector, [](const std::string& error_msg)
-				  { cout << "[ERROR] " << error_msg << endl; });
-
-	if(ev == nullptr)
-	{
-		return;
-	}
-
 	sinsp_threadinfo* thread = ev->get_thread_info();
 	if(thread)
 	{
@@ -451,17 +447,8 @@ void json_dump_reinit_evt_formatter(sinsp& inspector)
 	}
 }
 
-void json_dump(sinsp& inspector)
+void json_dump(sinsp_evt* ev)
 {
-
-	sinsp_evt* ev = get_event(inspector, [](const std::string& error_msg)
-				  { cout << R"({"error": ")" << error_msg << R"("})" << endl; });
-
-	if(ev == nullptr)
-	{
-		return;
-	}
-
 	std::string output;
 	sinsp_threadinfo* thread = ev->get_thread_info();
 
