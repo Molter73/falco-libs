@@ -182,7 +182,7 @@ def assert_events(expected_events: dict,
             if validate_event(event, received_event):
                 success = True
                 break
-        assert success, f"Did not receive expected event: {event}, got instead: {received_event}\n\nExpected events: {expected_events}\n\nReceived so far: {received_events}"
+        assert success, f"Did not receive expected event: {event}"
 
 
 def sinsp_validation(container: docker.models.containers.Container) -> (bool, str):

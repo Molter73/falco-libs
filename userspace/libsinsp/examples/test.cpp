@@ -55,17 +55,21 @@ unsigned long buffer_bytes_dim = DEFAULT_DRIVER_BUFFER_BYTES_DIM;
 
 sinsp_evt* get_event(sinsp& inspector, std::function<void(const std::string&)> handle_error);
 
-#define EVENT_HEADER "%evt.num %evt.time cat=%evt.category container=%container.id proc=%proc.name(%proc.pid.%thread.tid) "
+#define EVENT_HEADER "*%evt.num %evt.time cpu=%evt.cpu cat=%evt.category container=%container.id proc=%proc.name(%proc.pid.%thread.tid) "
 #define EVENT_TRAILER "%evt.dir %evt.type %evt.args"
 
 #define EVENT_DEFAULTS EVENT_HEADER EVENT_TRAILER
-#define PROCESS_DEFAULTS EVENT_HEADER "ppid=%proc.ppid exe=%proc.exe args=[%proc.cmdline] " EVENT_TRAILER
+#define PROCESS_DATA "ppid=%proc.ppid exe=%proc.exe cmd=[%proc.cmdline] "
+#define PROCESS_DEFAULTS EVENT_HEADER PROCESS_DATA EVENT_TRAILER
+#define NET_DEFAULTS EVENT_HEADER PROCESS_DATA "%fd.name " EVENT_TRAILER
 
 std::string default_output = EVENT_DEFAULTS;
 std::string process_output = PROCESS_DEFAULTS;
+std::string net_output = NET_DEFAULTS;
 
 static std::unique_ptr<sinsp_evt_formatter> default_formatter = nullptr;
 static std::unique_ptr<sinsp_evt_formatter> process_formatter = nullptr;
+static std::unique_ptr<sinsp_evt_formatter> net_formatter = nullptr;
 
 static void sigint_handler(int signum)
 {
@@ -154,6 +158,7 @@ void parse_CLI_options(sinsp& inspector, int argc, char** argv)
 		case 'o':
 			default_output = optarg;
 			process_output = optarg;
+			net_output = optarg;
 			break;
 		case 'E':
 			inspector.set_import_users(false);
@@ -325,6 +330,7 @@ int main(int argc, char** argv)
 
 	default_formatter.reset(new sinsp_evt_formatter(&inspector, default_output));
 	process_formatter.reset(new sinsp_evt_formatter(&inspector, process_output));
+	net_formatter.reset(new sinsp_evt_formatter(&inspector, net_output));
 
 	while(!g_interrupted)
 	{
@@ -367,9 +373,15 @@ sinsp_evt* get_event(sinsp& inspector, std::function<void(const std::string&)> h
 void formatted_dump(sinsp&, sinsp_evt* ev)
 {
 	std::string output;
-	if(ev->get_category() == EC_PROCESS)
+	ppm_event_category cat = ev->get_category();
+
+	if(cat == EC_PROCESS)
 	{
 		process_formatter->tostring(ev, output);
+	}
+	else if (cat == EC_NET)
+	{
+		net_formatter->tostring(ev, output);
 	}
 	else
 	{

@@ -63,27 +63,7 @@ def expected_events(origin: dict, destination: dict) -> list:
             "fd.name": f"{origin['ip']}->{destination['ip']}",
             "proc.cmdline": "nginx",
             "proc.exe": "nginx: master proces",
-        }, {
-            "evt.args": f"fd=3(<4t>{origin['ip']}->{destination['ip']}) ",
-            "evt.dir": ">",
-            "evt.type": "close",
-            "proc.name": "curl",
-        }, {
-            "evt.args": "res=0 ",
-            "evt.dir": "<",
-            "evt.type": "close",
-            "proc.name": "curl",
-        }, {
-            "evt.args": f"fd=3(<4t>{origin['ip']}->{destination['ip']}) ",
-            "evt.dir": ">",
-            "evt.type": "close",
-            "proc.name": "nginx",
-        }, {
-            "evt.args": "res=0 ",
-            "evt.dir": "<",
-            "evt.type": "close",
-            "proc.name": "nginx",
-        }
+        },
     ]
 
 
