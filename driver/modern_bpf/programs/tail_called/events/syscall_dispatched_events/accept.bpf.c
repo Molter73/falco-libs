@@ -11,13 +11,9 @@
 
 /*=============================== ENTER EVENT ===========================*/
 
-SEC("tp_btf/sys_enter")
-int BPF_PROG(accept_e,
-	     struct pt_regs *regs,
-	     long id)
-{
+static inline int handle_accept_enter(unsigned int size, unsigned int ppme, int has_param) {
 	struct ringbuf_struct ringbuf;
-	if(!ringbuf__reserve_space(&ringbuf, ctx, ACCEPT_E_SIZE, PPME_SOCKET_ACCEPT_5_E))
+	if(!ringbuf__reserve_space(&ringbuf, ctx, size, ppme))
 	{
 		return 0;
 	}
@@ -26,7 +22,13 @@ int BPF_PROG(accept_e,
 
 	/*=============================== COLLECT PARAMETERS  ===========================*/
 
-	// Here we have no parameters to collect.
+	if (has_param != 0) {
+		/* Parameter 1: flags (type: PT_FLAGS32) */
+		/// TODO: we don't support flags yet and so we just return zero.
+		///    If implemented, special handling for SYS_ACCEPT socketcall is needed.
+		uint32_t flags = 0;
+		ringbuf__store_u32(&ringbuf, flags);
+	}
 
 	/*=============================== COLLECT PARAMETERS  ===========================*/
 
@@ -35,14 +37,27 @@ int BPF_PROG(accept_e,
 	return 0;
 }
 
+SEC("tp_btf/sys_enter")
+int BPF_PROG(accept_e,
+	     struct pt_regs *regs,
+	     long id)
+{
+	return handle_accept_enter(ACCEPT_E_SIZE, PPME_SOCKET_ACCEPT_5_E, 0);
+}
+
+SEC("tp_btf/sys_enter")
+int BPF_PROG(accept4_e,
+	     struct pt_regs *regs,
+	     long id)
+{
+	return handle_accept_enter(ACCEPT4_E_SIZE, PPME_SOCKET_ACCEPT4_6_E, 1);
+}
+
 /*=============================== ENTER EVENT ===========================*/
 
 /*=============================== EXIT EVENT ===========================*/
 
-SEC("tp_btf/sys_exit")
-int BPF_PROG(accept_x,
-	     struct pt_regs *regs,
-	     long ret)
+static inline int handle_accept_exit(unsigned int ppme)
 {
 	struct auxiliary_map *auxmap = auxmap__get();
 	if(!auxmap)
@@ -50,7 +65,7 @@ int BPF_PROG(accept_x,
 		return 0;
 	}
 
-	auxmap__preload_event_header(auxmap, PPME_SOCKET_ACCEPT_5_X);
+	auxmap__preload_event_header(auxmap, ppme);
 
 	/*=============================== COLLECT PARAMETERS  ===========================*/
 
@@ -60,7 +75,7 @@ int BPF_PROG(accept_x,
 	/* If the syscall `connect` succeeds, it creates a new connected socket
 	 * with file descriptor `ret` and we can get some parameters, otherwise we return
 	 * default values.
-	 */
+*/
 
 	/* actual dimension of the server queue. */
 	uint32_t queuelen = 0;
@@ -84,7 +99,7 @@ int BPF_PROG(accept_x,
 		/* If the syscall is successful the `sockfd` will be >= 0. We want
 		 * to extract information from the listening socket, not from the
 		 * new one.
-		 */
+		*/
 		int32_t sockfd = (int32_t)args[0];
 		struct file *file = extract__file_struct_from_fd(sockfd);
 		struct socket *socket = get_sock_from_file(file);
@@ -100,7 +115,7 @@ int BPF_PROG(accept_x,
 		}
 	}
 	else
-	{
+{
 		auxmap__store_empty_param(auxmap);
 	}
 
@@ -120,6 +135,22 @@ int BPF_PROG(accept_x,
 	auxmap__submit_event(auxmap, ctx);
 
 	return 0;
+}
+
+SEC("tp_btf/sys_exit")
+int BPF_PROG(accept_x,
+	     struct pt_regs *regs,
+	     long ret)
+{
+	return handle_accept_exit(PPME_SOCKET_ACCEPT_5_X);
+}
+
+SEC("tp_btf/sys_exit")
+int BPF_PROG(accept4_x,
+	     struct pt_regs *regs,
+	     long ret)
+{
+	return handle_accept_exit(PPME_SOCKET_ACCEPT4_6_X);
 }
 
 /*=============================== EXIT EVENT ===========================*/
