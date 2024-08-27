@@ -33,10 +33,11 @@ TEST(SyscallEnter, recvmmsgE) {
 
 	/*=============================== ASSERT PARAMETERS  ===========================*/
 
-	// Here we have no parameters to assert.
+	/* Parameter 1: fd (type: PT_FD) */
+	evt_test->assert_numeric_param(1, (int64_t)mock_fd);
 
 	/*=============================== ASSERT PARAMETERS  ===========================*/
 
-	evt_test->assert_num_params_pushed(0);
+	evt_test->assert_num_params_pushed(1);
 }
 #endif
