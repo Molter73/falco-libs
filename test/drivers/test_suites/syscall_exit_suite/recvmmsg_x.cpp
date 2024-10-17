@@ -86,18 +86,20 @@ TEST(SyscallExit, recvmmsgXTcpConnectionNoSnaplen) {
 	/* Parameter 1: res (type: PT_ERRNO) */
 	evt_test->assert_numeric_param(1, (int64_t)mmh.msg_len);
 
-	/* Parameter 2: size (type: PT_UINT32) */
-	evt_test->assert_numeric_param(2, (uint32_t)mmh.msg_len);
+	/* Parameter 2: fd (type: PT_FD) */
+	evt_test->assert_numeric_param(2, (int64_t)connected_socket_fd);
 
-	/* Parameter 3: data (type: PT_BYTEBUF) */
-	evt_test->assert_bytebuf_param(3, NO_SNAPLEN_MESSAGE, sent_bytes);
+	/* Parameter 3: size (type: PT_UINT32) */
+	evt_test->assert_numeric_param(3, (uint32_t)mmh.msg_len);
 
-	/* Parameter 4: tuple (type: PT_SOCKTUPLE) */
+	/* Parameter 4: data (type: PT_BYTEBUF) */
+	evt_test->assert_bytebuf_param(4, NO_SNAPLEN_MESSAGE, sent_bytes);
 
+	/* Parameter 5: tuple (type: PT_SOCKTUPLE) */
 	if(evt_test->is_modern_bpf_engine()) {
 		/* The server performs a 'recvmmsg` so the server is the final destination of the packet
 		 * while the client is the src. */
-		evt_test->assert_tuple_inet_param(4,
+		evt_test->assert_tuple_inet_param(5,
 		                                  PPM_AF_INET,
 		                                  IPV4_CLIENT,
 		                                  IPV4_SERVER,
@@ -107,20 +109,20 @@ TEST(SyscallExit, recvmmsgXTcpConnectionNoSnaplen) {
 		/// TODO: If the socket is connected, the msg_name and msg_namelen members shall be ignored,
 		/// but right now we use them to send data also in TCP connections so we need to change this
 		/// behavior!
-		evt_test->assert_empty_param(4);
-		evt_test->assert_num_params_pushed(5);
+		evt_test->assert_empty_param(5);
+		evt_test->assert_num_params_pushed(6);
 		GTEST_SKIP() << "[RECVMMSG_X]: we receive an empty tuple but we have all the data in the "
 		                "kernel to "
 		                "obtain the correct tuple"
 		             << std::endl;
 	}
 
-	/* Parameter 5: msg_control (type: PT_BYTEBUF) */
-	evt_test->assert_empty_param(5);
+	/* Parameter 6: msg_control (type: PT_BYTEBUF) */
+	evt_test->assert_empty_param(6);
 
 	/*=============================== ASSERT PARAMETERS  ===========================*/
 
-	evt_test->assert_num_params_pushed(5);
+	evt_test->assert_num_params_pushed(6);
 }
 
 TEST(SyscallExit, recvmmsgXTcpConnectionSnaplen) {
@@ -202,36 +204,39 @@ TEST(SyscallExit, recvmmsgXTcpConnectionSnaplen) {
 	/* Parameter 1: res (type: PT_ERRNO) */
 	evt_test->assert_numeric_param(1, (int64_t)FULL_MESSAGE_LEN);
 
-	/* Parameter 2: size (type: PT_UINT32) */
-	evt_test->assert_numeric_param(2, (uint32_t)FULL_MESSAGE_LEN);
+	/* Parameter 2: fd (type: PT_FD) */
+	evt_test->assert_numeric_param(2, (int64_t)connected_socket_fd);
 
-	/* Parameter 3: data (type: PT_BYTEBUF) */
-	evt_test->assert_bytebuf_param(3, FULL_MESSAGE, DEFAULT_SNAPLEN);
+	/* Parameter 3: size (type: PT_UINT32) */
+	evt_test->assert_numeric_param(3, (uint32_t)FULL_MESSAGE_LEN);
+
+	/* Parameter 4: data (type: PT_BYTEBUF) */
+	evt_test->assert_bytebuf_param(4, FULL_MESSAGE, DEFAULT_SNAPLEN);
 
 	if(evt_test->is_modern_bpf_engine()) {
-		/* Parameter 4: tuple (type: PT_SOCKTUPLE) */
+		/* Parameter 5: tuple (type: PT_SOCKTUPLE) */
 		/* The server performs a 'recvmsg` so the server is the final destination of the packet
 		 * while the client is the src. */
-		evt_test->assert_tuple_inet_param(4,
+		evt_test->assert_tuple_inet_param(5,
 		                                  PPM_AF_INET,
 		                                  IPV4_CLIENT,
 		                                  IPV4_SERVER,
 		                                  IPV4_PORT_CLIENT_STRING,
 		                                  IPV4_PORT_SERVER_STRING);
 	} else {
-		evt_test->assert_empty_param(4);
-		evt_test->assert_num_params_pushed(5);
+		evt_test->assert_empty_param(5);
+		evt_test->assert_num_params_pushed(6);
 		GTEST_SKIP() << "[RECVMSG_X]: we receive an empty tuple but we have all the data in the "
 		                "kernel to obtain the correct tuple"
 		             << std::endl;
 	}
 
 	/* Parameter 5: msg_control (type: PT_BYTEBUF) */
-	evt_test->assert_empty_param(5);
+	evt_test->assert_empty_param(6);
 
 	/*=============================== ASSERT PARAMETERS  ===========================*/
 
-	evt_test->assert_num_params_pushed(5);
+	evt_test->assert_num_params_pushed(6);
 }
 
 TEST(SyscallExit, recvmmsgXTcpConnectionNullSockaddr) {
@@ -313,36 +318,39 @@ TEST(SyscallExit, recvmmsgXTcpConnectionNullSockaddr) {
 	/* Parameter 1: res (type: PT_ERRNO) */
 	evt_test->assert_numeric_param(1, (int64_t)FULL_MESSAGE_LEN);
 
-	/* Parameter 2: size (type: PT_UINT32) */
-	evt_test->assert_numeric_param(2, (uint32_t)FULL_MESSAGE_LEN);
+	/* Parameter 2: fd (type: PT_FD) */
+	evt_test->assert_numeric_param(2, (int64_t)connected_socket_fd);
+
+	/* Parameter 3: size (type: PT_UINT32) */
+	evt_test->assert_numeric_param(3, (uint32_t)FULL_MESSAGE_LEN);
 
 	/* Parameter 3: data (type: PT_BYTEBUF) */
-	evt_test->assert_bytebuf_param(3, FULL_MESSAGE, DEFAULT_SNAPLEN);
+	evt_test->assert_bytebuf_param(4, FULL_MESSAGE, DEFAULT_SNAPLEN);
 
 	if(evt_test->is_modern_bpf_engine()) {
-		/* Parameter 4: tuple (type: PT_SOCKTUPLE) */
+		/* Parameter 5: tuple (type: PT_SOCKTUPLE) */
 		/* The server performs a 'recvmsg` so the server is the final destination of the packet
 		 * while the client is the src. */
-		evt_test->assert_tuple_inet_param(4,
+		evt_test->assert_tuple_inet_param(5,
 		                                  PPM_AF_INET,
 		                                  IPV4_CLIENT,
 		                                  IPV4_SERVER,
 		                                  IPV4_PORT_CLIENT_STRING,
 		                                  IPV4_PORT_SERVER_STRING);
 	} else {
-		evt_test->assert_empty_param(4);
-		evt_test->assert_num_params_pushed(5);
+		evt_test->assert_empty_param(5);
+		evt_test->assert_num_params_pushed(6);
 		GTEST_SKIP() << "[RECVMSG_X]: we receive an empty tuple because the pointer to sockaddr is "
 		                "NULL, but we should rely on kernel structs"
 		             << std::endl;
 	}
 
-	/* Parameter 5: msg_control (type: PT_BYTEBUF) */
-	evt_test->assert_empty_param(5);
+	/* Parameter 6: msg_control (type: PT_BYTEBUF) */
+	evt_test->assert_empty_param(6);
 
 	/*=============================== ASSERT PARAMETERS  ===========================*/
 
-	evt_test->assert_num_params_pushed(5);
+	evt_test->assert_num_params_pushed(6);
 }
 
 TEST(SyscallExit, recvmmsgXUdpConnectionSnaplen) {
@@ -417,26 +425,29 @@ TEST(SyscallExit, recvmmsgXUdpConnectionSnaplen) {
 	/* Parameter 1: res (type: PT_ERRNO) */
 	evt_test->assert_numeric_param(1, (int64_t)FULL_MESSAGE_LEN);
 
-	/* Parameter 2: size (type: PT_UINT32) */
-	evt_test->assert_numeric_param(2, (uint32_t)FULL_MESSAGE_LEN);
+	/* Parameter 2: fd (type: PT_FD) */
+	evt_test->assert_numeric_param(2, (int64_t)server_socket_fd);
 
-	/* Parameter 3: data (type: PT_BYTEBUF) */
-	evt_test->assert_bytebuf_param(3, FULL_MESSAGE, DEFAULT_SNAPLEN);
+	/* Parameter 3: size (type: PT_UINT32) */
+	evt_test->assert_numeric_param(3, (uint32_t)FULL_MESSAGE_LEN);
 
-	/* Parameter 4: tuple (type: PT_SOCKTUPLE) */
-	evt_test->assert_tuple_inet_param(4,
+	/* Parameter 4: data (type: PT_BYTEBUF) */
+	evt_test->assert_bytebuf_param(4, FULL_MESSAGE, DEFAULT_SNAPLEN);
+
+	/* Parameter 5: tuple (type: PT_SOCKTUPLE) */
+	evt_test->assert_tuple_inet_param(5,
 	                                  PPM_AF_INET,
 	                                  IPV4_CLIENT,
 	                                  IPV4_SERVER,
 	                                  IPV4_PORT_CLIENT_STRING,
 	                                  IPV4_PORT_SERVER_STRING);
 
-	/* Parameter 5: msg_control (type: PT_BYTEBUF) */
-	evt_test->assert_empty_param(5);
+	/* Parameter 6: msg_control (type: PT_BYTEBUF) */
+	evt_test->assert_empty_param(6);
 
 	/*=============================== ASSERT PARAMETERS  ===========================*/
 
-	evt_test->assert_num_params_pushed(5);
+	evt_test->assert_num_params_pushed(6);
 }
 
 TEST(SyscallExit, recvmmsgXUdpConnectionNullSockaddr) {
@@ -511,37 +522,40 @@ TEST(SyscallExit, recvmmsgXUdpConnectionNullSockaddr) {
 	/* Parameter 1: res (type: PT_ERRNO) */
 	evt_test->assert_numeric_param(1, (int64_t)FULL_MESSAGE_LEN);
 
-	/* Parameter 2: size (type: PT_UINT32) */
-	evt_test->assert_numeric_param(2, (uint32_t)FULL_MESSAGE_LEN);
+	/* Parameter 2: fd (type: PT_FD) */
+	evt_test->assert_numeric_param(2, (int64_t)server_socket_fd);
 
-	/* Parameter 3: data (type: PT_BYTEBUF) */
-	evt_test->assert_bytebuf_param(3, FULL_MESSAGE, DEFAULT_SNAPLEN);
+	/* Parameter 3: size (type: PT_UINT32) */
+	evt_test->assert_numeric_param(3, (uint32_t)FULL_MESSAGE_LEN);
 
-	/* Parameter 4: tuple (type: PT_SOCKTUPLE) */
+	/* Parameter 4: data (type: PT_BYTEBUF) */
+	evt_test->assert_bytebuf_param(4, FULL_MESSAGE, DEFAULT_SNAPLEN);
+
+	/* Parameter 5: tuple (type: PT_SOCKTUPLE) */
 	if(evt_test->is_modern_bpf_engine()) {
 		/* This is the correct behavior because if the userspace struct is empty
 		 * we cannot extract the source ip and port, unless we directly read the packet
 		 * headers!
 		 */
-		evt_test->assert_tuple_inet_param(4,
+		evt_test->assert_tuple_inet_param(5,
 		                                  PPM_AF_INET,
 		                                  IPV4_EMPTY,
 		                                  IPV4_SERVER,
 		                                  IPV4_PORT_EMPTY_STRING,
 		                                  IPV4_PORT_SERVER_STRING);
 	} else {
-		evt_test->assert_empty_param(4);
+		evt_test->assert_empty_param(5);
 		GTEST_SKIP() << "[RECVMSG_X]: we send an empty tuple, but we can at least send the dest ip "
 		                "and source"
 		             << std::endl;
 	}
 
-	/* Parameter 5: msg_control (type: PT_BYTEBUF) */
-	evt_test->assert_empty_param(5);
+	/* Parameter 6: msg_control (type: PT_BYTEBUF) */
+	evt_test->assert_empty_param(6);
 
 	/*=============================== ASSERT PARAMETERS  ===========================*/
 
-	evt_test->assert_num_params_pushed(5);
+	evt_test->assert_num_params_pushed(6);
 }
 
 #endif
@@ -580,17 +594,20 @@ TEST(SyscallExit, recvmmsgXFail) {
 	/* Parameter 1: res (type: PT_ERRNO) */
 	evt_test->assert_numeric_param(1, (int64_t)errno_value);
 
-	/* Parameter 2: size (type: PT_UINT32) */
-	evt_test->assert_numeric_param(2, (uint32_t)0);
+	/* Parameter 2: fd (type: PT_FD) */
+	evt_test->assert_empty_param(2);
 
-	/* Parameter 3: data (type: PT_BYTEBUF) */
-	evt_test->assert_empty_param(3);
+	/* Parameter 3: size (type: PT_UINT32) */
+	evt_test->assert_numeric_param(3, (uint32_t)0);
 
-	/* Parameter 4: tuple (type: PT_SOCKTUPLE) */
+	/* Parameter 4: data (type: PT_BYTEBUF) */
 	evt_test->assert_empty_param(4);
 
-	/* Parameter 5: msg_control (type: PT_BYTEBUF) */
+	/* Parameter 5: tuple (type: PT_SOCKTUPLE) */
 	evt_test->assert_empty_param(5);
+
+	/* Parameter 6: msg_control (type: PT_BYTEBUF) */
+	evt_test->assert_empty_param(6);
 
 	/*=============================== ASSERT PARAMETERS  ===========================*/
 }
@@ -700,17 +717,20 @@ TEST(SyscallExit, recvmmsgAncillaryData) {
 	/* Parameter 1: res (type: PT_ERRNO) */
 	evt_test->assert_numeric_param(1, (int64_t)FULL_MESSAGE_LEN);
 
-	/* Parameter 2: size (type: PT_UINT32) */
-	evt_test->assert_numeric_param(2, (uint32_t)FULL_MESSAGE_LEN);
+	/* Parameter 2: fd (type: PT_FD) */
+	evt_test->assert_numeric_param(2, (int64_t)connected_socket_fd);
 
-	/* Parameter 3: data (type: PT_BYTEBUF) */
-	evt_test->assert_bytebuf_param(3, FULL_MESSAGE, DEFAULT_SNAPLEN);
+	/* Parameter 3: size (type: PT_UINT32) */
+	evt_test->assert_numeric_param(3, (uint32_t)FULL_MESSAGE_LEN);
 
-	/* Parameter 5: msg_control (type: PT_BYTEBUF) */
-	evt_test->assert_bytebuf_param(5, (const char *)cmsg, msg_controllen);
+	/* Parameter 4: data (type: PT_BYTEBUF) */
+	evt_test->assert_bytebuf_param(4, FULL_MESSAGE, DEFAULT_SNAPLEN);
+
+	/* Parameter 6: msg_control (type: PT_BYTEBUF) */
+	evt_test->assert_bytebuf_param(6, (const char *)cmsg, msg_controllen);
 
 	/*=============================== ASSERT PARAMETERS  ===========================*/
 
-	evt_test->assert_num_params_pushed(5);
+	evt_test->assert_num_params_pushed(6);
 }
 #endif

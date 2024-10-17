@@ -3088,20 +3088,6 @@ int f_sys_recvmsg_x(struct event_filler_arguments *args) {
 	return add_sentinel(args);
 }
 
-int f_sys_recvmmsg_e(struct event_filler_arguments *args) {
-	unsigned long val = 0;
-	int res = 0;
-	int32_t fd = 0;
-
-	/* Parameter 1: fd (type: PT_FD)*/
-	syscall_get_arguments_deprecated(args, 0, 1, &val);
-	fd = (int32_t)val;
-	res = val_to_ring(args, (int64_t)fd, 0, false, 0);
-	CHECK_RES(res);
-
-	return add_sentinel(args);
-}
-
 int f_sys_recvmmsg_x(struct event_filler_arguments *args) {
 	int res;
 	unsigned long val;
@@ -3131,19 +3117,23 @@ int f_sys_recvmmsg_x(struct event_filler_arguments *args) {
 		res = val_to_ring(args, retval, 0, false, 0);
 		CHECK_RES(res);
 
-		/* Parameter 2: size (type: PT_UINT32) */
+		/* Parameter 2: fd (type: PT_FD) */
+		res = push_empty_param(args);
+		CHECK_RES(res);
+
+		/* Parameter 3: size (type: PT_UINT32) */
 		res = val_to_ring(args, 0, 0, false, 0);
 		CHECK_RES(res);
 
-		/* Parameter 3: data (type: PT_BYTEBUF) */
+		/* Parameter 4: data (type: PT_BYTEBUF) */
 		res = push_empty_param(args);
 		CHECK_RES(res);
 
-		/* Parameter 4: tuple (type: PT_SOCKTUPLE) */
+		/* Parameter 5: tuple (type: PT_SOCKTUPLE) */
 		res = push_empty_param(args);
 		CHECK_RES(res);
 
-		/* Parameter 5: msg_control (type: PT_BYTEBUF) */
+		/* Parameter 6: msg_control (type: PT_BYTEBUF) */
 		res = push_empty_param(args);
 		CHECK_RES(res);
 
@@ -3165,6 +3155,12 @@ int f_sys_recvmmsg_x(struct event_filler_arguments *args) {
 		res = val_to_ring(args, mmh.msg_len, 0, false, 0);
 		CHECK_RES(res);
 
+		/* Parameter 2: fd (type: PT_FD)*/
+		syscall_get_arguments_deprecated(args, 0, 1, &val);
+		fd = (int32_t)val;
+		res = val_to_ring(args, (int64_t)fd, 0, false, 0);
+		CHECK_RES(res);
+
 		/*
 		 * data and size
 		 */
@@ -3181,6 +3177,12 @@ int f_sys_recvmmsg_x(struct event_filler_arguments *args) {
 
 		/* Parameter 1: res (type: PT_ERRNO) */
 		res = val_to_ring(args, compat_mmh.msg_len, 0, false, 0);
+		CHECK_RES(res);
+
+		/* Parameter 2: fd (type: PT_FD)*/
+		syscall_get_arguments_deprecated(args, 0, 1, &val);
+		fd = (int32_t)val;
+		res = val_to_ring(args, (int64_t)fd, 0, false, 0);
 		CHECK_RES(res);
 
 		/*

@@ -4253,18 +4253,13 @@ FILLER(sys_recvmsg_x_2, true) {
 	return res;
 }
 
-FILLER(sys_recvmmsg_e, true) {
-	/* Parameter 1: fd (type: PT_FD) */
-	int32_t fd = (int32_t)bpf_syscall_get_argument(data, 0);
-	return bpf_push_s64_to_ring(data, (int64_t)fd);
-}
-
 FILLER(sys_recvmmsg_x, true) {
 	const struct iovec *iov;
 	struct mmsghdr mmh;
 	unsigned long iovcnt;
 	unsigned long val;
 	int res;
+	int fd;
 
 	/* Parameter 1: res (type: PT_ERRNO) */
 	long retval = bpf_syscall_get_retval(data->ctx);
@@ -4276,21 +4271,27 @@ FILLER(sys_recvmmsg_x, true) {
 		res = bpf_push_s64_to_ring(data, retval);
 		CHECK_RES(res);
 
-		/* Parameter 2: size (type: PT_UINT32) */
+		/* Parameter 2: fd (type: PT_FD) */
+		res = bpf_push_empty_param(data);
+		CHECK_RES(res);
+
+		/* Parameter 3: size (type: PT_UINT32) */
 		res = bpf_push_u32_to_ring(data, 0);
 		CHECK_RES(res);
 
-		/* Parameter 3: data (type: PT_BYTEBUF) */
+		/* Parameter 4: data (type: PT_BYTEBUF) */
 		res = bpf_push_empty_param(data);
 		CHECK_RES(res);
 
-		/* Parameter 4: tuple (type: PT_SOCKTUPLE) */
+		/* Parameter 5: tuple (type: PT_SOCKTUPLE) */
 		res = bpf_push_empty_param(data);
 		CHECK_RES(res);
 
-		/* Parameter 5: msg_control (type: PT_BYTEBUF) */
+		/* Parameter 6: msg_control (type: PT_BYTEBUF) */
 		return bpf_push_empty_param(data);
 	}
+
+	fd = bpf_syscall_get_argument(data, 0);
 
 	/*
 	 * Retrieve the message header
@@ -4300,6 +4301,9 @@ FILLER(sys_recvmmsg_x, true) {
 		return PPM_FAILURE_INVALID_USER_MEMORY;
 
 	res = bpf_push_s64_to_ring(data, mmh.msg_len);
+	CHECK_RES(res);
+
+	res = bpf_push_s64_to_ring(data, fd);
 	CHECK_RES(res);
 
 	/*

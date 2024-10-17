@@ -35,7 +35,7 @@ int BPF_PROG(sendmmsg_e, struct pt_regs *regs, long id) {
 
 /*=============================== EXIT EVENT ===========================*/
 
-typedef struct sendmmsg_exit_s {
+typedef struct {
 	uint32_t fd;
 	struct mmsghdr *mmh;
 	struct pt_regs *regs;

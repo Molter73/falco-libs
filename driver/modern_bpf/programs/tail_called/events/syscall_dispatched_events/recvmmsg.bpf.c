@@ -13,10 +13,6 @@
 
 SEC("tp_btf/sys_enter")
 int BPF_PROG(recvmmsg_e, struct pt_regs *regs, long id) {
-	/* Collect parameters at the beginning to manage socketcalls */
-	unsigned long socket_fd = 0;
-	extract__network_args(&socket_fd, 1, regs);
-
 	struct ringbuf_struct ringbuf;
 	if(!ringbuf__reserve_space(&ringbuf, ctx, RECVMMSG_E_SIZE, PPME_SOCKET_RECVMMSG_E)) {
 		return 0;
@@ -26,8 +22,7 @@ int BPF_PROG(recvmmsg_e, struct pt_regs *regs, long id) {
 
 	/*=============================== COLLECT PARAMETERS  ===========================*/
 
-	/* Parameter 1: fd (type: PT_FD)*/
-	ringbuf__store_s64(&ringbuf, (int64_t)(int32_t)socket_fd);
+	// Here we have no parameters to collect.
 
 	/*=============================== COLLECT PARAMETERS  ===========================*/
 
@@ -40,7 +35,7 @@ int BPF_PROG(recvmmsg_e, struct pt_regs *regs, long id) {
 
 /*=============================== EXIT EVENT ===========================*/
 
-typedef struct recvmmsg_data_s {
+typedef struct {
 	uint32_t fd;
 	struct mmsghdr *mmh;
 	struct pt_regs *regs;
@@ -68,7 +63,10 @@ static long handle_exit(uint32_t index, void *ctx) {
 	/* Parameter 1: res (type: PT_ERRNO) */
 	auxmap__store_s64_param(auxmap, mmh.msg_len);
 
-	/* Parameter 2: size (type: PT_UINT32) */
+	/* Parameter 2: fd (type: PT_FD) */
+	auxmap__store_s64_param(auxmap, (int64_t)data->fd);
+
+	/* Parameter 3: size (type: PT_UINT32) */
 	auxmap__store_u32_param(auxmap, (uint32_t)mmh.msg_len);
 
 	/* We read the minimum between `snaplen` and what we really
@@ -80,19 +78,19 @@ static long handle_exit(uint32_t index, void *ctx) {
 		snaplen = mmh.msg_len;
 	}
 
-	/* Parameter 3: data (type: PT_BYTEBUF) */
+	/* Parameter 4: data (type: PT_BYTEBUF) */
 	auxmap__store_iovec_data_param(auxmap,
 	                               (unsigned long)mmh.msg_hdr.msg_iov,
 	                               mmh.msg_hdr.msg_iovlen,
 	                               snaplen);
 
-	/* Parameter 4: tuple (type: PT_SOCKTUPLE) */
+	/* Parameter 5: tuple (type: PT_SOCKTUPLE) */
 	auxmap__store_socktuple_param(auxmap,
 	                              data->fd,
 	                              INBOUND,
 	                              (struct sockaddr *)mmh.msg_hdr.msg_name);
 
-	/* Parameter 5: msg_control (type: PT_BYTEBUF) */
+	/* Parameter 6: msg_control (type: PT_BYTEBUF) */
 	if(mmh.msg_hdr.msg_control != NULL) {
 		auxmap__store_bytebuf_param(auxmap,
 		                            (unsigned long)mmh.msg_hdr.msg_control,
@@ -122,16 +120,19 @@ int BPF_PROG(recvmmsg_x, struct pt_regs *regs, long ret) {
 		/* Parameter 1: res (type: PT_ERRNO) */
 		auxmap__store_s64_param(auxmap, ret);
 
-		/* Parameter 2: size (type: PT_UINT32) */
+		/* Parameter 2: fd (type: PT_FD) */
+		auxmap__store_empty_param(auxmap);
+
+		/* Parameter 3: size (type: PT_UINT32) */
 		auxmap__store_u32_param(auxmap, 0);
 
-		/* Parameter 3: data (type: PT_BYTEBUF) */
+		/* Parameter 4: data (type: PT_BYTEBUF) */
 		auxmap__store_empty_param(auxmap);
 
-		/* Parameter 4: tuple (type: PT_SOCKTUPLE) */
+		/* Parameter 5: tuple (type: PT_SOCKTUPLE) */
 		auxmap__store_empty_param(auxmap);
 
-		/* Parameter 5: msg_control (type: PT_BYTEBUF) */
+		/* Parameter 6: msg_control (type: PT_BYTEBUF) */
 		auxmap__store_empty_param(auxmap);
 
 		auxmap__finalize_event_header(auxmap);
